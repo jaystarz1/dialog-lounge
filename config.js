@@ -144,12 +144,22 @@ const config =
 	authKey: process.env.AUTH_KEY || `${__dirname}/certs/perms.pub.pem`
 };
 
-if (process.env.MEDIASOUP_ANNOUNCED_IP) 
+if (process.env.MEDIASOUP_ANNOUNCED_IP)
 {
 	// For now we have to bind to 0.0.0.0 to ensure TURN and non-TURN connectivity.
 	config.mediasoup.webRtcTransportOptions.listenIps.push({
 		ip          : '0.0.0.0',
 		announcedIp : process.env.MEDIASOUP_ANNOUNCED_IP
+	});
+}
+
+// private-quest-lounge: additionally announce the host's LAN IP so clients on
+// the same network get a working ICE candidate without NAT hairpinning.
+if (process.env.MEDIASOUP_ANNOUNCED_IP_LAN)
+{
+	config.mediasoup.webRtcTransportOptions.listenIps.push({
+		ip          : '0.0.0.0',
+		announcedIp : process.env.MEDIASOUP_ANNOUNCED_IP_LAN
 	});
 }
 
