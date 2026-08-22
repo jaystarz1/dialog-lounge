@@ -146,11 +146,16 @@ const config =
 
 if (process.env.MEDIASOUP_ANNOUNCED_IP)
 {
-	// For now we have to bind to 0.0.0.0 to ensure TURN and non-TURN connectivity.
-	config.mediasoup.webRtcTransportOptions.listenIps.push({
-		ip          : '0.0.0.0',
-		announcedIp : process.env.MEDIASOUP_ANNOUNCED_IP
-	});
+	// Public mode: replace the default 127.0.0.1 candidate entirely — it is
+	// unreachable for real clients and every listenIp burns a UDP port per
+	// transport from the same small pool.
+	config.mediasoup.webRtcTransportOptions.listenIps =
+	[
+		{
+			ip          : '0.0.0.0',
+			announcedIp : process.env.MEDIASOUP_ANNOUNCED_IP
+		}
+	];
 }
 
 // private-quest-lounge: additionally announce the host's LAN IP so clients on
