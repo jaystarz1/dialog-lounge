@@ -24,6 +24,8 @@ const bodyParser = require('body-parser');
 const { AwaitQueue } = require('awaitqueue');
 const Logger = require('./lib/Logger');
 const Room = require('./lib/Room');
+const loungeAdmission = require('./lib/lounge-admission');
+const loungeWebRtcServer = require('./lib/lounge-webrtc-server');
 const interactiveServer = require('./lib/interactiveServer');
 const interactiveClient = require('./lib/interactiveClient');
 const util = require('util');
@@ -102,6 +104,7 @@ async function runMediasoupWorkers()
 			setTimeout(() => process.exit(1), 2000);
 		});
 
+		await loungeWebRtcServer.attach(worker, i, config);
 		mediasoupWorkers.push(worker);
 		utils.workerLoadMan.set(worker._pid, { peerCnt: 0, roomReqCnt: 0, rooms: new Map() });
 	}
@@ -121,6 +124,7 @@ async function createExpressApp()
 	logger.info('creating Express app...');
 
 	expressApp = express();
+	expressApp.use(require('./lib/lounge-admission-relay'));
 	expressApp.use(bodyParser.json());
 
 	expressApp.param(
@@ -318,8 +322,13 @@ async function runProtooWebSocketServer()
 		});
 
 	// Handle connections from clients.
-	protooWebSocketServer.on('connectionrequest', (info, accept, reject) =>
+	protooWebSocketServer.on('connectionrequest', async (info, accept, reject) =>
 	{
+		if (!(await loungeAdmission(info.request.headers.cookie)))
+		{
+			reject(401, 'Authentication required');
+			return;
+		}
 		// The client indicates the roomId and peerId in the URL query.
 		const u = url.parse(info.request.url, true);
 		const roomId = u.query['roomId'];
